@@ -1,0 +1,13 @@
+default:
+  module: "src.server.tasks.locomo.Locomo0Task"
+  parameters:
+    name: "locomo-0"
+    data_file: "data/locomo/locomo0.json"
+    llm_judge_agent: "Pro/Qwen/Qwen2.5-7B-Instruct"  # 从 configs/llmapi/evaluate_agent.yaml 中选择 agent
+
+locomo-0:
+  parameters:
+    name: "locomo-0"
+    data_file: "data/locomo/locomo0.json"
+    llm_judge_agent: "Pro/Qwen/Qwen2.5-7B-Instruct"  # 从 configs/llmapi/evaluate_agent.yaml 中选择 agent
+

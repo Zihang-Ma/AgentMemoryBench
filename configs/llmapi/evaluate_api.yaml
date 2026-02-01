@@ -1,0 +1,24 @@
+module: src.client.agents.HTTPAgent
+
+parameters:
+  # ===== 基础 HTTP 配置（请根据自己的服务修改） =====
+  url: https://api.siliconflow.cn/v1/chat/completions
+
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+  # ===== 默认模型调用参数（可被 agent.yaml 覆盖） =====
+  body:
+    # 这里不设置 model，留给 agent.yaml 针对每个 agent 指定
+    temperature: 0.0
+    max_tokens: 512
+
+  # ===== 提示词格式与返回解析（与 AgentBench 保持一致） =====
+  prompter:
+    name: role_content_dict
+    args:
+      agent_role: assistant
+
+  # 默认的返回解析规则，如需要也可以在 agent.yaml 中按 agent 覆盖
+  return_format: "{response[choices][0][message][content]}"

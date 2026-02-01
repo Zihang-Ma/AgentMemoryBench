@@ -1,0 +1,9 @@
+# 每个顶层 key 是一个 agent 名称，脚本/前端在选择模型时直接使用该名称
+Pro/Qwen/Qwen2.5-7B-Instruct:
+  import: "./evaluate_api.yaml"
+  parameters:
+    name: "Pro/Qwen/Qwen2.5-7B-Instruct"
+    body:
+      model: "Pro/Qwen/Qwen2.5-7B-Instruct"
+      max_tokens: 512
+      temperature: 0

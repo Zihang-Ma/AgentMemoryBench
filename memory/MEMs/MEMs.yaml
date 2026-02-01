@@ -1,0 +1,195 @@
+mems:
+  # ===== 模型配置 =====
+  # 统一使用一个模型，避免重复注册 client
+  model_name: "Pro/Qwen/Qwen2.5-7B-Instruct"
+
+  # ===== 工作流归纳 Prompt =====
+  workflow_induction_prompt: |
+    Given a completed trajectory, your task is to extract reusable workflow(s) from it.
+    Each workflow should be a commonly-reused sub-routine. Do not generate similar or overlapping workflows. Each workflow should have at least two steps.
+    
+    OUTPUT FORMAT (strictly follow this format):
+    ## workflow_name
+    Given that [context description], this workflow [what it does].
+    [step 1 description with {variable} placeholders]
+    [step 2 description with {variable} placeholders]
+    ...
+    
+    IMPORTANT:
+    - Each workflow must start with "## workflow_name" (use snake_case for names)
+    - The next line should describe the context and purpose
+    - Then list the steps, using {variable-name} for parameterizable values
+    - Extract multiple workflows if the trajectory contains different reusable patterns
+    - Use clear, descriptive variable names in {curly_braces}
+
+  # ===== Trigger Model 配置 =====
+  trigger_model_config:
+    success_only: true  # 只存储成功样本（finish==True）
+    reward_bigger_than_zero: true  # true: 只存储 reward>0 的样本，false: 都存储
+
+  trigger_model_prompt: |
+    You are a memory source selector. Given the task interaction trajectory, decide which memory source(s) should be updated.
+    
+    Available memory sources:
+    - system_memory: The system generates a series of intermediate output results during task execution. System memory helps strengthen the system's reasoning ability by storing task execution workflows and experiences.
+    - personal_memory: The system receives human input and feedback. Personal memory helps the system improve its understanding of user behavior and enhances its personalization capabilities by storing user preferences and conversation history.
+    
+    Task interaction trajectory:
+    {history}
+    
+    You must return your decision in JSON format:
+    {{
+      "sources": ["system_memory"] | ["personal_memory"] | ["system_memory", "personal_memory"],
+      "reasoning": "brief explanation"
+    }}
+
+  # ===== 工作流管理 Prompt =====
+  workflow_management_prompt: |
+    You are a smart workflow memory manager. You control the workflow memory of a system.
+    You can perform four operations: (1) ADD, (2) UPDATE, (3) DELETE, and (4) NONE.
+
+    Based on the existing workflows and new workflows, you need to decide which operation to perform for EACH new workflow.
+
+    Operation Guidelines:
+
+    1. ADD: Use when the new workflow does not exist in the existing workflows.
+       - The new workflow describes a different task or pattern
+       - Generate a descriptive workflow name as the ID (e.g., "filter_table_by_condition", "update_user_profile")
+       - [IMPORTANT] If existing workflows list is EMPTY, ALL new workflows must be ADD operations
+
+    2. UPDATE: Use when the new workflow is similar to an existing workflow but provides more details or improvements.
+       - The new workflow covers the same task but with better description or additional steps
+       - Use the exact numeric ID from the existing workflow (e.g., "0", "1", "2")
+       - Include the "old_memory" field with the original workflow text
+       - [IMPORTANT] NEVER use UPDATE if the workflow ID does not exist in the existing workflows list
+
+    3. DELETE: Use when the new workflow contradicts an existing workflow.
+       - The new workflow provides information that conflicts with an existing workflow
+       - Use the exact numeric ID from the existing workflow
+       - This operation is rare for workflow management
+
+    4. NONE: Use when the new workflow already exists in the existing workflows.
+       - The new workflow is essentially the same as an existing workflow
+       - No changes needed
+
+    [CRITICAL RULES]
+    - You MUST return one operation for EACH new workflow
+    - For ADD operations: ID must be a descriptive_workflow_name (snake_case), NOT "ADD" or a number
+    - For UPDATE/DELETE operations: ID must be the exact numeric ID from existing workflows (e.g., "0", "1", "2"), NOT a descriptive name
+    - If existing workflows is empty or "None", ALL operations must be ADD
+    - NEVER use UPDATE/DELETE with IDs that don't exist in the existing workflows list
+
+    Existing workflows (format: "ID: <number>"):
+    {existing_workflows}
+
+    New workflows:
+    {new_workflows}
+
+    Return JSON only (no other text):
+    {{
+      "memory": [
+        {{
+          "id": "for ADD: descriptive_name, for UPDATE/DELETE: numeric_id",
+          "text": "workflow description in plain text (no markdown code blocks)",
+          "event": "ADD|UPDATE|DELETE|NONE",
+          "old_memory": "only required for UPDATE, copy the original workflow text here"
+        }}
+      ]
+    }}
+
+    Examples:
+
+    Example 1 - Empty existing workflows (ALL must be ADD):
+    Existing workflows: None
+    New workflows:
+    ## filter_users
+    Filter users by age > 18
+
+    Response:
+    {{
+      "memory": [
+        {{"id": "filter_users", "text": "Filter users by age > 18", "event": "ADD"}}
+      ]
+    }}
+
+    Example 2 - ADD new workflow:
+    Existing workflows:
+    ID: 0
+    Text: Filter users by age
+
+    New workflows:
+    ## calculate_average
+    Calculate average of a list
+
+    Response:
+    {{
+      "memory": [
+        {{"id": "calculate_average", "text": "Calculate average of a list", "event": "ADD"}}
+      ]
+    }}
+
+    Example 3 - UPDATE existing workflow:
+    Existing workflows:
+    ID: 0
+    Text: Filter users by age
+
+    New workflows:
+    ## filter_users_enhanced
+    Filter users by age > 18 and status = active
+
+    Response:
+    {{
+      "memory": [
+        {{"id": "0", "text": "Filter users by age > 18 and status = active", "event": "UPDATE", "old_memory": "Filter users by age"}}
+      ]
+    }}
+
+    Example 4 - NONE (already exists):
+    Existing workflows:
+    ID: 0
+    Text: Filter users by age > 18
+
+    New workflows:
+    ## filter_users
+    Filter users by age > 18
+
+    Response:
+    {{
+      "memory": [
+        {{"id": "0", "text": "Filter users by age > 18", "event": "NONE"}}
+      ]
+    }}
+
+    Technical requirements:
+    - Use plain text in "text" field, no markdown code blocks
+    - Escape quotes with \\"
+    - Escape newlines with \\n
+    - Return valid JSON only
+
+  # ===== 工作流管理配置 =====
+  # 向量搜索时每个新工作流找 top_k 个相似工作流（参考 mem0 的做法，默认 5）
+  workflow_management_similarity_top_k: 5
+
+  # 最大重试次数配置（避免无限重试，默认 5）
+  trigger_model_max_retries: 5  # Trigger model 最大重试次数
+  workflow_induction_max_retries: 5  # Workflow induction 最大重试次数
+  workflow_management_max_retries: 5  # Workflow management 最大重试次数
+
+  # ===== 工作流 RAG 配置 =====
+  workflow_rag:
+    # 下载同款 embedding 模型 `git clone https://huggingface.co/BAAI/bge-base-en-v1.5`
+    embedding_model: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/bge-base-en-v1.5"
+    top_k: 50
+    order: "similar_at_top"  # "similar_at_top" | "similar_at_bottom" | "random"
+    seed: 42
+    # 记忆内容会追加到 user question 末尾
+    prompt_template: |
+      Here are some useful workflows learned from past similar episodes, you can use them to help you complete the task:
+      {workflows}
+    success_only: true
+    reward_bigger_than_zero: true
+
+  # ===== Mem0 记忆源配置 =====
+  mem0:
+    config_path: "memory/mem0/mem0.yaml"
+

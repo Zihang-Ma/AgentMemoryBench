@@ -1,0 +1,13 @@
+default:
+  module: "src.server.tasks.locomo.Locomo8Task"
+  parameters:
+    name: "locomo-8"
+    data_file: "data/locomo/locomo8.json"
+    llm_judge_agent: "Pro/Qwen/Qwen2.5-7B-Instruct"  # 从 configs/llmapi/evaluate_agent.yaml 中选择 agent
+
+locomo-8:
+  parameters:
+    name: "locomo-8"
+    data_file: "data/locomo/locomo8.json"
+    llm_judge_agent: "Pro/Qwen/Qwen2.5-7B-Instruct"  # 从 configs/llmapi/evaluate_agent.yaml 中选择 agent
+

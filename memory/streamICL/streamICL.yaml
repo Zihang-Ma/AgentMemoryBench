@@ -1,0 +1,18 @@
+stream_icl:
+  # RAG 配置
+  rag:
+    # 下载同款 embedding 模型 `git clone https://huggingface.co/BAAI/bge-base-en-v1.5`
+    # 如需离线/本地加载，填本地模型目录绝对路径，例如：
+    embedding_model: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/bge-base-en-v1.5"  # 用于编码的 embedding 模型
+
+    top_k: 4  # 检索 top_k 个最相似的经验
+    order: "similar_at_top"  # "similar_at_top" | "similar_at_bottom" | "random"
+    seed: 42  # 随机种子，仅在 order="random" 时起作用，用于控制随机打乱的复现性
+  
+  # ===== 过滤配置 =====
+  success_only: true  # true: 只存储成功完成的样本（finish 或 status=="completed"），false: 都存储
+  reward_bigger_than_zero: true  # true: 只存储 reward>0 的样本，false: 都存储
+
+  # ===== 提示模板 =====
+  # 记忆内容会追加到 user question 末尾
+  prompt_template: "Here are some examples of the task you have completed:\n\n{examples}"
