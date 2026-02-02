@@ -7,21 +7,20 @@
 ## 1. 引言
 
 ### 简单引入
-LLM-based Agents, which are LLMs equipped with capabilities such as reasoning, planning, perception, memory, and tool-use [1, 2, 3, 6],  have rapidly evolved from simple chatbots into capable systems that can write code [39], control browsers [36], and perform advanced question answering [10]. 在赋能智能体的各种组件中，tool-use和reasoning等能力已逐渐内化到 LLM 参数中，而planning和perception则通过实时的分解目标和渐近元数据披露等方式增强问题解决能力 **[langChain]**。然而，这些组件都有一个共同的局限性：它们并未改变智能体的静态属性——智能体无法从历史交互或经验中学习，也无法适配用户的长期偏好 [10]。相比之下，记忆（memory）组件的出现，彻底将智能体从无记忆、无法从过往成败中吸收经验的静态助手，转变为可随环境动态进化的智能伙伴[3, 4, 5]。记忆使智能体能够从过去的交互中积累知识、记住用户偏好，并随着时间的推移持续提升性能。这种动态学习能力将记忆与其他智能体组件区分开来，代表了向真正自适应 AI 系统的范式转变。
+LLM-based Agents, which are LLMs equipped with capabilities such as reasoning, planning, perception, memory, and tool-use [1, 2, 3, 6],  have rapidly evolved from simple chatbots into capable systems that can write code [29], control browsers [30], and perform advanced question answering [28]. 在赋能智能体的各种组件中，tool-use和reasoning等能力已逐渐内化到 LLM 参数中 ，而planning和perception则通过实时的分解目标和渐近元数据披露等方式增强问题解决能力 [3]。然而，这些组件都有一个共同的局限性：它们并未改变智能体的静态属性 [10] ——智能体无法从历史交互或经验中学习 [11]，也无法适配用户的长期偏好 [13]。相比之下，记忆（memory）组件的出现，彻底将智能体从无记忆、无法从过往成败中吸收经验的静态助手，转变为可随环境动态进化的智能伙伴[3, 4, 5]。记忆使智能体能够从过去的交互中积累知识、记住用户偏好，并随着时间的推移持续提升性能。这种动态学习能力将记忆与其他智能体组件区分开来，代表了向真正自适应 AI 系统的范式转变。
 
 ### 现有研究局限性
 尽管记忆的重要性不言而喻，现有研究仍面临显著局限性：
 基准层面的问题：
-- 缺乏在线评估能力：现有基准大多将记忆视为静态组件，仅支持离线评估，无法观察学习过程。它们通常在单一时间点测试记忆系统性能（如 [8, 9, 12, 13, 14, 16, 17]），这就像只通过期末考试成绩评估学生，而不是观察整个学期的学习曲线，但实际上agent memory就像人类记忆————不是一次性写入，而是不断重构、强化、遗忘的过程
-- 未全面考虑系统记忆与个人记忆：现有 benchmark 假设任务边界清晰，所以他们要么专注于系统记忆（如 Evo-memory [10]、StreamBench [6]、LifelongAgentBench [7]），要么专注于个人记忆（如 KnowMeBench [48]、 Locomo [16]、LongMemEval [17]、MDR [15]），但未能同时全面覆盖两种类型的记忆任务。
-- 缺少迁移学习和重放场景的评估维度：从Offline模式到Online模式，实现了从“只看最终成绩，看不到学习曲线”到“记录每次进步，观察知识积累过程”的进步。而迁移学习和重放，这些维度对于理解智能体如何适应和保留知识至关重要，但现有基准偏偏缺乏这些评估维度。
-- 缺乏统一、易复现的框架：不同基准使用不同的实现方式，使得方法对比和结果复现变得困难——如AWM [11]分别在WebArena [31]和Mind2Web [33]两个不同的benchmark上面先进行online模式的改造在分别进行实验；而像MemGen [8]、g-memory [9] 这样优秀的通用记忆解决方案，却缺乏合适的benchmark进行memory保留、迁移等能力的测评.
+- 缺乏在线评估能力：现有基准大多将记忆视为静态组件，仅支持离线评估，无法观察学习过程。它们通常在单一时间点测试记忆系统性能（如 AgentBench [27] 、 Locomo[17]、KnowMeBench [23]），这就像只通过期末考试成绩评估学生，而不是观察整个学期的学习曲线，但实际上agent memory就像人类记忆————不是一次性写入，而是不断重构、强化、遗忘的过程
+- 未全面考虑系统记忆与个人记忆：现有 benchmark 假设任务边界清晰，所以他们要么专注于系统记忆（如 MemoryBench [28]、Evo-memory [10]、StreamBench [6]、LifelongAgentBench [7]），要么专注于个人记忆（如 HaluMem[22]、 KnowMeBench [23]、 Locomo [16]、LongMemEval [17]、MDR [15]），但未能同时全面覆盖两种类型的记忆任务。
+- 缺少迁移学习和重放场景的评估维度：从Offline模式到Online模式，实现了从“只看最终成绩，看不到学习曲线”到“记录每次进步，观察知识积累过程”的进步。而迁移学习和重放，这些维度对于理解智能体在学习过程中的知识泛化和知识保留的能力至关重要，但现有基准偏偏缺乏这些评估维度。
+- 缺乏统一、易复现的框架：不同基准使用不同的实现方式，使得方法对比和结果复现变得困难——如AWM [11]需要先对两个Benchmark——WebArena [30]和Mind2Web [31]进行online模式的改造，然后才能测评提出的记忆方案；而像MemGen [8] 这样优秀的通用记忆解决方案，却缺乏合适的benchmark进行memory实时表现、知识保留、知识泛化等能力的测评.
 
 方法论层面的问题：
-- 上下文工程与记忆机制：部分工作通过上下文工程方法（如 streamICL、experience replay [6, 7]）激活预训练中的语义先验和格式适配能力实现性能提升 [25, 26]，但它们缺乏对案例的提炼和抽象过程：只是存储和检索原始对话历史以实现简单的记忆功能，却没有对历史轨迹和交互过程进行总结、提取关键信息和抽象规律。真正的记忆机制应该像人类记忆一样，能够从多个案例中提炼出可复用的经验、规则和模式，而非仅仅依赖原始案例的相似性匹配。
-- 有一些RAG的工作逐渐也开始尝试动态的场景 [42]，...。
-- 单一记忆类型的设计局限：现有记忆方法往往专注于单一类型的记忆（系统记忆或个人记忆），缺乏能够同时处理两种记忆类型的统一框架。专注于系统记忆的方法（如 [10, 11]）强调从任务案例中学习经验，但未能解决长期人机对话中的因果推理、跨会话推理、时间推理和用户偏好记忆等能力 [13, 16, 17]；而专注于个人记忆的方法则缺乏对任务执行经验的积累和复用。但现实场景中往往不存在这种清晰的任务边界。这种设计局限导致在混合场景下，专门优化的记忆方法（如 AWM [11]、mem0 [13]）的表现甚至不如简单朴素实现的记忆方法（如 streamICL [6] 等），凸显了单一记忆设计在真实应用场景中的根本缺陷
-- 虽然现在已有方法，如MemGen [8] 等已经尝试了去提取更通用的记忆表示，但这些方法在评测记忆能力时，只在仅能测评 system memory 能力的benchmark 上进行了评估，并且还是是离线评估。
+- 上下文工程与记忆机制：部分工作通过上下文工程方法（如 streamICL [6] 、experience replay [7]）激活预训练中的语义先验和格式适配能力实现性能提升 [25, 26]，但它们缺乏对案例的提炼和抽象过程：只是存储和检索原始对话历史以实现简单的记忆功能，却没有对历史轨迹和交互过程进行总结、提取关键信息和抽象规律。真正的记忆机制应该像人类记忆一样，能够从多个案例中提炼出可复用的经验、规则和模式，而非仅仅依赖原始案例的相似性匹配。
+- 随着动态场景需求的凸显，部分RAG相关工作也开始尝试融入动态特性[32]。值得注意的是，当RAG的检索系统逐渐向动态化演进时，其与智能体记忆（memory）的功能界限正变得日益模糊[4]，典型代表如DualRAG [33]、DynamicRAG [34]等。但从方法论层面来看，这类方法并未明确界定动态检索与记忆机制的融合逻辑，也未形成兼顾记忆的提炼、抽象与长期保留特性，以及动态检索高效性的统一框架，未能真正实现两者的深度协同，难以有效支撑智能体记忆能力的系统性提升。
+- 单一记忆类型的设计局限：现有记忆方法往往专注于单一类型的记忆（系统记忆或个人记忆），缺乏能够同时处理两种记忆类型的统一框架。专注于系统记忆的方法（如 [10, 11, 12, 18, 19, 20, 21, 24]）强调从任务案例中学习经验，但未能解决长期人机对话中的因果推理、跨会话推理、时间推理和用户偏好记忆等能力 [13, 14, 15]；而专注于个人记忆的方法则缺乏对任务执行经验的积累和复用。但现实场景中往往不存在这种清晰的任务边界。这种设计局限导致在混合场景下，专门优化的记忆方法（如 AWM [11]、mem0 [13]）的表现甚至不如简单朴素实现的记忆方法（如 streamICL [6] 等），凸显了单一记忆设计在真实应用场景中的根本缺陷
 
 ### 为啥解决不了
 现有工作无法解决上述问题的根本原因在于评估范式的缺陷。现有基准的局限性（只支持离线评估、只覆盖单一记忆类型）使得方法设计时无需考虑混合场景的复杂性。例如，lifelongAgentBench只考虑了system memory和online模式，没有考虑迁移学习和重放学习两种场景；Evo-memory [10]虽然考虑了多种测评模式，但也只考察了agent的system memory能力，不支持在"模拟现实的""任务边界模糊的""流式场景"中评测记忆机制的综合能力。这种局限性还导致专注于系统记忆的方法在设计时假设任务类型明确，无需考虑用户偏好；专注于个人记忆的方法假设交互场景单一，无需考虑任务执行经验。这种"设计-评估"的闭环导致方法无法应对真实场景中的复杂性——智能体在实际应用中需要同时处理系统任务和个人交互，但现有方法缺乏有效的机制来协调系统记忆和个人记忆。即使一些方法（如MemGen [8]、G-memory [9]）尝试提取更通用的记忆表示，但它们也缺乏一个支持混合场景的benchmark进行评估，无法验证其在真实场景下的有效性。
@@ -308,7 +307,7 @@ Memory methodology and benchmarks
 [6]StreamBench: Towards Benchmarking Continuous Improvement of Language Agents
 [7]LifelongAgentBench: Evaluating LLM Agents as Lifelong Learners
 [8]MemGen: WeavingGenerativeLatentMemoryfor Self-Evolving Agents
-[9]G-Memory: Tracing Hierarchical Memory for Multi-Agent Systems
+[9]SYNAPSE: Empowering LLM Agents with Episodic-Semantic Memory via Spreading Activation
 [10]Evo-Memory: Benchmarking LLM Agent Test-time Learning with Self-Evolving Memory
 [11]AGENT WORKFLOW MEMORY
 [12]ExpeL: LLMAgents Are Experiential Learners
@@ -331,7 +330,10 @@ In-context learning
 
 [27]AGENTBENCH: EVALUATING LLMS AS AGENTS
 [28]MEMORYBENCH: A BENCHMARK FOR MEMORY ANDCONTINUAL LEARNING IN LLM SYSTEMS
+[29]AgentCoder: Multi-Agent Code Generation with Effective Testing and Self-optimisation
+[30]WEBARENA: A REALISTIC WEB ENVIRONMENT FOR BUILDING AUTONOMOUS AGENTS
+[31]MIND2WEB: Towards a Generalist Agent for the Web
 
-[29]SYNAPSE: Empowering LLM Agents with Episodic-Semantic Memory via Spreading Activation
-
-[30]SELF-CONSISTENCY IMPROVES CHAIN OF THOUGHT REASONING IN LANGUAGE MODELS
+[32]Retrieval-Augmented Generation: A Comprehensive Survey of Architectures, Enhancements, and Robustness Frontiers
+[33]DualRAG: A Dual-Process Approach to Integrate Reasoning and Retrieval for Multi-Hop Question Answering
+[34]DynamicRAG: Leveraging Outputs of Large Language Model as Feedback for Dynamic Reranking in Retrieval-Augmented Generation
