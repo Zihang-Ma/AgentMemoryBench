@@ -524,7 +524,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Task datasets adapted from AgentBench and LoCoMo
 - Evaluation protocols inspired by continual learning literature
 - Memory baselines from StreamBench, AWM, and Mem0
-
----
-
-**Project Status**: Active Development | **Latest Version**: v1.0.0 |
