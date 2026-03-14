@@ -246,6 +246,7 @@ To use the Mem0 method:
 cd extra
 
 # Build required containers
+docker pull mysql:8
 docker-compose build local-os-default
 docker-compose build local-os-packages
 docker-compose build local-os-ubuntu
